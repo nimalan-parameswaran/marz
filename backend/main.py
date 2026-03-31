@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routes import visits
+from backend.db.postgres import create_tables
+from backend.models import patient, visit, outcome
 
 app = FastAPI(title="Marz Clinical AI")
 
@@ -10,6 +12,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+def startup():
+    create_tables()
 
 app.include_router(visits.router, prefix="/api")
 

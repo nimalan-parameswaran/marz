@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marz — Report</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <h1>Marz</h1>
+    <div>
+        <a href="index.html">Home</a>
+        <a href="visit.html">New Visit</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card">
+        <h2>Clinical Report</h2>
+
+        <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+            <div>
+                <label style="font-size:12px; color:#718096;">Patient</label>
+                <p id="patient-name" style="font-weight:600; font-size:16px;"></p>
+            </div>
+            <div>
+                <label style="font-size:12px; color:#718096;">Age</label>
+                <p id="patient-age" style="font-weight:600; font-size:16px;"></p>
+            </div>
+        </div>
+
+        <span class="badge">AI-generated — review before acting</span>
+        <div id="diagnosis-output" class="report-box"></div>
+
+        <div style="margin-top: 20px;">
+            <a href="visit.html" class="btn btn-primary"
+               style="text-decoration:none; display:inline-block;">
+                New Visit
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>

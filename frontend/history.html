@@ -34,7 +34,7 @@
 </div>
 
 <script type="module">
-import { getPatientHistory } from "./js/api.js";
+import { getPatientHistory, logOutcome, getOutcome } from "./js/api.js";
 
 window.loadHistory = async function() {
     const name = document.getElementById("search-name").value.trim();
@@ -60,36 +60,146 @@ window.loadHistory = async function() {
         status.textContent = `Found ${data.total_visits} visit(s) for ${data.patient_name}.`;
 
         results.innerHTML = data.visits.map((v, i) => `
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                    <h2 style="border:none; padding:0; margin:0;">Visit ${data.total_visits - i}</h2>
+            <div class="card" id="visit-card-${v.visit_id}">
+                <div style="display:flex; justify-content:space-between;
+                     align-items:center; margin-bottom:16px;">
+                    <h2 style="border:none; padding:0; margin:0;">
+                        Visit ${data.total_visits - i}
+                    </h2>
                     <span class="badge">${v.date}</span>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr;
+                     gap:16px; margin-bottom:16px;">
                     <div>
                         <label style="font-size:12px; color:#718096;">Symptoms</label>
-                        <p style="font-size:14px; margin-top:4px;">${v.symptoms || "—"}</p>
+                        <p style="font-size:14px; margin-top:4px;">
+                            ${v.symptoms || "—"}
+                        </p>
                     </div>
                     <div>
                         <label style="font-size:12px; color:#718096;">Observations</label>
-                        <p style="font-size:14px; margin-top:4px;">${v.observations || "—"}</p>
+                        <p style="font-size:14px; margin-top:4px;">
+                            ${v.observations || "—"}
+                        </p>
                     </div>
                     <div>
                         <label style="font-size:12px; color:#718096;">Lab results</label>
-                        <p style="font-size:14px; margin-top:4px;">${v.lab_results || "—"}</p>
+                        <p style="font-size:14px; margin-top:4px;">
+                            ${v.lab_results || "—"}
+                        </p>
                     </div>
                 </div>
 
                 <label style="font-size:12px; color:#718096;">Diagnosis</label>
                 <div class="report-box" style="margin-top:8px; max-height:200px;">
 ${v.diagnosis || "No diagnosis recorded."}</div>
+
+                <div style="margin-top:20px; border-top:1px solid #e2e8f0;
+                     padding-top:16px;">
+                    <label style="font-size:13px; font-weight:500;
+                           color:#4a5568; display:block; margin-bottom:10px;">
+                        Record treatment outcome
+                    </label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;
+                         margin-bottom:10px;">
+                        <button class="btn btn-secondary outcome-btn"
+                            onclick="selectOutcome(${v.visit_id}, 'success', this)"
+                            style="font-size:13px; padding:8px 16px;">
+                            Successful
+                        </button>
+                        <button class="btn btn-secondary outcome-btn"
+                            onclick="selectOutcome(${v.visit_id}, 'partial', this)"
+                            style="font-size:13px; padding:8px 16px;">
+                            Partial
+                        </button>
+                        <button class="btn btn-secondary outcome-btn"
+                            onclick="selectOutcome(${v.visit_id}, 'failed', this)"
+                            style="font-size:13px; padding:8px 16px;">
+                            Failed
+                        </button>
+                    </div>
+                    <textarea id="notes-${v.visit_id}"
+                        placeholder="Recovery notes (optional)..."
+                        style="width:100%; margin-bottom:8px; min-height:60px;">
+                    </textarea>
+                    <button class="btn btn-primary"
+                        onclick="submitOutcome(${v.visit_id})"
+                        style="font-size:13px;">
+                        Save Outcome
+                    </button>
+                    <div id="outcome-status-${v.visit_id}" class="status"></div>
+                </div>
             </div>
         `).join("");
+
+        for (const v of data.visits) {
+            loadExistingOutcome(v.visit_id);
+        }
 
     } catch (err) {
         status.className = "status error";
         status.textContent = "Error: " + err.message;
+    }
+}
+
+const selectedOutcomes = {};
+
+window.selectOutcome = function(visitId, value, btn) {
+    selectedOutcomes[visitId] = value;
+    const card = document.getElementById(`visit-card-${visitId}`);
+    card.querySelectorAll(".outcome-btn").forEach(b => {
+        b.style.background = "";
+        b.style.color = "";
+    });
+    btn.style.background = "#0f3460";
+    btn.style.color = "#fff";
+}
+
+window.submitOutcome = async function(visitId) {
+    const statusEl = document.getElementById(`outcome-status-${visitId}`);
+    const notes = document.getElementById(`notes-${visitId}`).value;
+    const outcome = selectedOutcomes[visitId];
+
+    if (!outcome) {
+        statusEl.className = "status error";
+        statusEl.textContent = "Please select an outcome first.";
+        return;
+    }
+
+    try {
+        await logOutcome(visitId, outcome, notes);
+        statusEl.className = "status success";
+        statusEl.textContent = "Outcome saved successfully.";
+    } catch (err) {
+        statusEl.className = "status error";
+        statusEl.textContent = "Error: " + err.message;
+    }
+}
+
+async function loadExistingOutcome(visitId) {
+    try {
+        const data = await getOutcome(visitId);
+        if (data.treatment_success) {
+            const statusEl = document.getElementById(
+                `outcome-status-${visitId}`
+            );
+            statusEl.className = "status success";
+            statusEl.textContent =
+                `Previously recorded: ${data.treatment_success}` +
+                (data.recovery_notes ? ` — ${data.recovery_notes}` : "");
+
+            const card = document.getElementById(`visit-card-${visitId}`);
+            card.querySelectorAll(".outcome-btn").forEach(b => {
+                if (b.textContent.trim().toLowerCase()
+                    .startsWith(data.treatment_success)) {
+                    b.style.background = "#0f3460";
+                    b.style.color = "#fff";
+                }
+            });
+        }
+    } catch (err) {
+        // No outcome yet — silence is fine
     }
 }
 </script>

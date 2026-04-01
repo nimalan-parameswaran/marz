@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marz — Clinical AI</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        .hero {
+            text-align: center;
+            padding: 60px 24px 40px;
+        }
+        .hero h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f3460;
+            margin-bottom: 12px;
+        }
+        .hero p {
+            font-size: 15px;
+            color: #718096;
+            max-width: 520px;
+            margin: 0 auto 32px;
+            line-height: 1.7;
+        }
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .action-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 28px 24px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            transition: box-shadow 0.2s, transform 0.2s;
+            display: block;
+        }
+        .action-card:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .action-card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1a1a2e;
+        }
+        .action-card p {
+            font-size: 13px;
+            color: #718096;
+            line-height: 1.6;
+        }
+        .status-bar {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #4a5568;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        .dot.green { background: #1D9E75; }
+        .dot.red   { background: #E24B4A; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <h1>Marz</h1>
+    <div>
+        <a href="visit.html">New Visit</a>
+        <a href="history.html">Patient History</a>
+        <a href="dashboard.html">Dashboard</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div class="hero">
+        <h2>Edge AI Clinical Intelligence</h2>
+        <p>Marz helps doctors in low-resource settings generate structured
+           clinical reports, track patient history, and improve treatment
+           decisions — fully offline, fully private.</p>
+    </div>
+
+    <div class="action-grid">
+        <a href="visit.html" class="action-card">
+            <div class="action-icon"
+                 style="background:#E1F5EE;">
+                <svg width="22" height="22" viewBox="0 0 24 24"
+                     fill="none" stroke="#0F6E56" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </div>
+            <h3>New visit</h3>
+            <p>Record a patient visit and generate an AI clinical report
+               with diagnosis and recommendations.</p>
+        </a>
+
+        <a href="history.html" class="action-card">
+            <div class="action-icon"
+                 style="background:#EEEDFE;">
+                <svg width="22" height="22" viewBox="0 0 24 24"
+                     fill="none" stroke="#534AB7" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <h3>Patient history</h3>
+            <p>Look up past visits for any patient and record treatment
+               outcomes to improve future recommendations.</p>
+        </a>
+
+        <a href="dashboard.html" class="action-card">
+            <div class="action-icon"
+                 style="background:#FAEEDA;">
+                <svg width="22" height="22" viewBox="0 0 24 24"
+                     fill="none" stroke="#854F0B" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                </svg>
+            </div>
+            <h3>Dashboard</h3>
+            <p>View clinic-wide stats, outcome trends, recent activity,
+               and individual patient health trajectories.</p>
+        </a>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="dot" id="backend-dot"></div>
+            <span id="backend-status">Checking backend...</span>
+        </div>
+        <div class="status-item">
+            <div class="dot green"></div>
+            <span>Offline-first — no data leaves this device</span>
+        </div>
+        <div class="status-item">
+            <div class="dot green"></div>
+            <span>MedAIBase/MedGemma1.5:4b via Ollama</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+async function checkBackend() {
+    const dot = document.getElementById("backend-dot");
+    const label = document.getElementById("backend-status");
+    try {
+        const res = await fetch("http://localhost:8000/health");
+        if (res.ok) {
+            dot.classList.add("green");
+            label.textContent = "Backend running";
+        } else {
+            dot.classList.add("red");
+            label.textContent = "Backend error";
+        }
+    } catch {
+        dot.classList.add("red");
+        label.textContent = "Backend not running — start uvicorn";
+    }
+}
+checkBackend();
+</script>
+</body>
+</html>

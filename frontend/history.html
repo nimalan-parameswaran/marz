@@ -129,6 +129,15 @@ ${v.diagnosis || "No diagnosis recorded."}</div>
                         Save Outcome
                     </button>
                     <div id="outcome-status-${v.visit_id}" class="status"></div>
+                    <div style="margin-top:12px;">
+    <a href="http://localhost:8000/api/report/${v.visit_id}/pdf"
+       target="_blank"
+       class="btn btn-secondary"
+       style="font-size:13px; text-decoration:none; display:inline-block;">
+        Download PDF report
+    </a>
+</div>
+<div id="outcome-status-${v.visit_id}" class="status"></div>
                 </div>
             </div>
         `).join("");

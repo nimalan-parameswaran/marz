@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routes import visits, patients, outcomes, stats
+from backend.routes import visits, patients, outcomes, stats, reports
 from backend.db.postgres import create_tables
 from backend.models import patient, visit, outcome
 
@@ -18,10 +18,11 @@ app.add_middleware(
 def startup():
     create_tables()
 
-app.include_router(visits.router, prefix="/api")
+app.include_router(visits.router,  prefix="/api")
 app.include_router(patients.router, prefix="/api")
 app.include_router(outcomes.router, prefix="/api")
-app.include_router(stats.router, prefix="/api")
+app.include_router(stats.router,   prefix="/api")
+app.include_router(reports.router, prefix="/api")
 
 @app.get("/health")
 def health():

@@ -13,3 +13,13 @@ export async function submitVisit(formData) {
 
     return await response.json();
 }
+
+export async function getPatientHistory(name) {
+    const response = await fetch(`${BASE_URL}/patient/${encodeURIComponent(name)}/history`);
+
+    if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+    }
+
+    return await response.json();
+}

@@ -3,46 +3,374 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marz — Report</title>
+    <title>Marz — Dashboard</title>
     <link rel="stylesheet" href="css/main.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .metric-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 8px 0 4px;
+        }
+        .metric-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-card.teal .metric-value  { color: #0F6E56; }
+        .metric-card.purple .metric-value { color: #534AB7; }
+        .metric-card.green .metric-value  { color: #3B6D11; }
+        .metric-card.amber .metric-value  { color: #854F0B; }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .feed-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .feed-item:last-child { border-bottom: none; }
+        .feed-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        .feed-symptoms {
+            font-size: 12px;
+            color: #718096;
+            max-width: 280px;
+        }
+        .feed-date {
+            font-size: 12px;
+            color: #a0aec0;
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+        .trend-search {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        canvas { max-height: 260px; }
+
+        .last-report {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body>
 
 <nav class="navbar">
     <h1>Marz</h1>
     <div>
-        <a href="index.html">Home</a>
+        <a href="visit.html">New Visit</a>
         <a href="history.html">Patient History</a>
+        <a href="dashboard.html">Dashboard</a>
     </div>
 </nav>
 
-<div class="container">
-    <div class="card">
-        <h2>Clinical Report</h2>
+<div class="container" style="max-width:1100px;">
 
-        <div style="display: flex; gap: 24px; margin-bottom: 24px;">
-            <div>
-                <label style="font-size:12px; color:#718096;">Patient</label>
-                <p id="patient-name" style="font-weight:600; font-size:16px;"></p>
-            </div>
-            <div>
-                <label style="font-size:12px; color:#718096;">Age</label>
-                <p id="patient-age" style="font-weight:600; font-size:16px;"></p>
-            </div>
+    <div class="metrics-grid">
+        <div class="metric-card teal">
+            <div class="metric-label">Total patients</div>
+            <div class="metric-value" id="total-patients">—</div>
+        </div>
+        <div class="metric-card purple">
+            <div class="metric-label">Total visits</div>
+            <div class="metric-value" id="total-visits">—</div>
+        </div>
+        <div class="metric-card green">
+            <div class="metric-label">Success rate</div>
+            <div class="metric-value" id="success-rate">—</div>
+        </div>
+        <div class="metric-card amber">
+            <div class="metric-label">Outcomes logged</div>
+            <div class="metric-value" id="total-outcomes">—</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="card">
+            <h2>Outcome breakdown</h2>
+            <canvas id="outcome-chart"></canvas>
+            <p id="no-outcomes" style="color:#a0aec0; font-size:13px;
+               text-align:center; display:none; margin-top:16px;">
+                No outcomes logged yet. Record treatment results in Patient History.
+            </p>
         </div>
 
-        <span class="badge">AI-generated — review before acting</span>
-        <div id="diagnosis-output" class="report-box"></div>
+        <div class="card">
+            <h2>Recent activity</h2>
+            <div id="activity-feed">
+                <p style="color:#a0aec0; font-size:13px;">Loading...</p>
+            </div>
+        </div>
+    </div>
 
-        <div style="margin-top: 20px;">
+    <div class="card">
+        <h2>Patient visit trend</h2>
+        <div class="trend-search">
+            <input type="text" id="trend-name"
+                placeholder="Enter patient name..."
+                style="flex:1; max-width:300px;">
+            <button class="btn btn-primary" onclick="loadTrend()">
+                Load trend
+            </button>
+        </div>
+        <div id="trend-area" style="display:none;">
+            <canvas id="trend-chart" style="max-height:220px;"></canvas>
+        </div>
+        <p id="trend-placeholder"
+           style="color:#a0aec0; font-size:13px; text-align:center; padding:24px 0;">
+            Search a patient to see their visit trend.
+        </p>
+        <div id="trend-visits" style="margin-top:16px;"></div>
+    </div>
+
+    <div id="last-report-section" class="card" style="display:none;">
+        <h2>Last generated report</h2>
+        <div style="display:flex; gap:24px; margin-bottom:16px;">
+            <div>
+                <label style="font-size:12px;color:#718096;">Patient</label>
+                <p id="rpt-name" style="font-weight:600;"></p>
+            </div>
+            <div>
+                <label style="font-size:12px;color:#718096;">Age</label>
+                <p id="rpt-age" style="font-weight:600;"></p>
+            </div>
+        </div>
+        <span class="badge">AI-generated — review before acting</span>
+        <div id="rpt-text" class="last-report"></div>
+        <div style="margin-top:16px;">
             <a href="visit.html" class="btn btn-primary"
                style="text-decoration:none; display:inline-block;">
                 New Visit
             </a>
         </div>
     </div>
+
 </div>
 
-<script src="js/dashboard.js"></script>
+<script type="module">
+import { getOverviewStats, getPatientTrend } from "./js/api.js";
+
+let outcomeChartInstance = null;
+let trendChartInstance = null;
+
+async function loadOverview() {
+    try {
+        const data = await getOverviewStats();
+
+        document.getElementById("total-patients").textContent =
+            data.total_patients;
+        document.getElementById("total-visits").textContent =
+            data.total_visits;
+        document.getElementById("success-rate").textContent =
+            data.success_rate + "%";
+        document.getElementById("total-outcomes").textContent =
+            data.outcomes.total;
+
+        renderOutcomeChart(data.outcomes);
+        renderActivityFeed(data.recent_visits);
+    } catch (err) {
+        console.error("Stats load failed:", err);
+    }
+}
+
+function renderOutcomeChart(outcomes) {
+    const canvas = document.getElementById("outcome-chart");
+    const noData = document.getElementById("no-outcomes");
+
+    if (outcomes.total === 0) {
+        canvas.style.display = "none";
+        noData.style.display = "block";
+        return;
+    }
+
+    if (outcomeChartInstance) outcomeChartInstance.destroy();
+
+    outcomeChartInstance = new Chart(canvas, {
+        type: "bar",
+        data: {
+            labels: ["Successful", "Partial", "Failed"],
+            datasets: [{
+                label: "Outcomes",
+                data: [outcomes.success, outcomes.partial, outcomes.failed],
+                backgroundColor: ["#1D9E75", "#EF9F27", "#E24B4A"],
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const pct = Math.round(
+                                ctx.raw / outcomes.total * 100
+                            );
+                            return `${ctx.raw} visits (${pct}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    grid: { color: "#f0f0f0" }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+}
+
+function renderActivityFeed(visits) {
+    const feed = document.getElementById("activity-feed");
+
+    if (!visits || visits.length === 0) {
+        feed.innerHTML = `<p style="color:#a0aec0; font-size:13px;">
+            No visits recorded yet.</p>`;
+        return;
+    }
+
+    feed.innerHTML = visits.map(v => `
+        <div class="feed-item">
+            <div>
+                <div class="feed-name">${v.patient_name}</div>
+                <div class="feed-symptoms">${v.symptoms || "—"}</div>
+            </div>
+            <div class="feed-date">${v.date}</div>
+        </div>
+    `).join("");
+}
+
+window.loadTrend = async function() {
+    const name = document.getElementById("trend-name").value.trim();
+    if (!name) return;
+
+    try {
+        const data = await getPatientTrend(name);
+
+        if (data.error || !data.visits.length) {
+            document.getElementById("trend-placeholder").textContent =
+                "No visits found for that patient.";
+            document.getElementById("trend-placeholder").style.display = "block";
+            document.getElementById("trend-area").style.display = "none";
+            return;
+        }
+
+        document.getElementById("trend-placeholder").style.display = "none";
+        document.getElementById("trend-area").style.display = "block";
+
+        const labels = data.visits.map(v => v.date);
+        const visitNumbers = data.visits.map(v => v.visit_number);
+
+        if (trendChartInstance) trendChartInstance.destroy();
+
+        trendChartInstance = new Chart(
+            document.getElementById("trend-chart"),
+            {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Visit number",
+                        data: visitNumbers,
+                        borderColor: "#0F6E56",
+                        backgroundColor: "rgba(15,110,86,0.08)",
+                        borderWidth: 2,
+                        pointBackgroundColor: "#0F6E56",
+                        pointRadius: 5,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 },
+                            title: {
+                                display: true,
+                                text: "Visit count"
+                            },
+                            grid: { color: "#f0f0f0" }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            }
+        );
+
+        document.getElementById("trend-visits").innerHTML =
+            data.visits.map(v => `
+                <div style="padding:12px 0; border-bottom:1px solid #e2e8f0;">
+                    <div style="display:flex; justify-content:space-between;
+                         margin-bottom:4px;">
+                        <span style="font-weight:500; font-size:13px;">
+                            Visit ${v.visit_number}
+                        </span>
+                        <span style="font-size:12px; color:#a0aec0;">
+                            ${v.date}
+                        </span>
+                    </div>
+                    <p style="font-size:12px; color:#718096; margin:0;">
+                        ${v.diagnosis_snippet || "No diagnosis recorded."}
+                    </p>
+                </div>
+            `).join("");
+
+    } catch (err) {
+        document.getElementById("trend-placeholder").textContent =
+            "Error loading trend: " + err.message;
+    }
+}
+
+const lastReport = sessionStorage.getItem("last_report");
+if (lastReport) {
+    const report = JSON.parse(lastReport);
+    document.getElementById("last-report-section").style.display = "block";
+    document.getElementById("rpt-name").textContent = report.patient_name;
+    document.getElementById("rpt-age").textContent = report.age + " years";
+    document.getElementById("rpt-text").textContent =
+        report.diagnosis_summary;
+}
+
+loadOverview();
+</script>
 </body>
 </html>

@@ -37,3 +37,17 @@ export async function getOutcome(visitId) {
     if (!response.ok) throw new Error(`Server error: ${response.status}`);
     return await response.json();
 }
+
+export async function getOverviewStats() {
+    const response = await fetch(`${BASE_URL}/stats/overview`);
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    return await response.json();
+}
+
+export async function getPatientTrend(name) {
+    const response = await fetch(
+        `${BASE_URL}/stats/patient/${encodeURIComponent(name)}/trend`
+    );
+    if (!response.ok) throw new Error(`Server error: ${response.status}`);
+    return await response.json();
+}

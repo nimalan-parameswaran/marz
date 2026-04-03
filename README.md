@@ -1,4 +1,6 @@
-# Marz Clinical AI Platform
+# #cooking👨🏽‍🍳
+
+## Marz Clinical AI Platform
 
 Marz is a clinical decision support platform that helps healthcare teams document patient visits, generate AI-assisted diagnostic summaries, track treatment outcomes, and review longitudinal patient trends.
 
